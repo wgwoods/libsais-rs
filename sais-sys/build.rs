@@ -54,9 +54,15 @@ impl BuildExtend for Build {
         }
         match self.tool_type() {
             ToolType::ClangLike => {
+                if self.target_os() == OS::Darwin {
+                    self.flag("-Xclang");
+                }
                 self.flag("-fopenmp");
             }
             ToolType::GnuLike => {
+                if self.target_os() == OS::Darwin {
+                    self.flag("-Xclang");
+                }
                 self.flag("-fopenmp");
                 if self.target_os() == OS::Win32 {
                     // openmp-sys reports missing gomp.dll on *-pc-windows-gnu/mingw-w64, workaround for this case
@@ -72,6 +78,7 @@ impl BuildExtend for Build {
     }
 
     fn setup_sources(&mut self) -> &mut Self {
+        self.include("libsais/include");
         let mut any_source = false;
         if cfg!(feature = "sais16") {
             self.file("libsais/src/libsais16.c");
