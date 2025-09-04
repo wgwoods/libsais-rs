@@ -1,5 +1,6 @@
 use cc::Build;
 use target_tuples::{Architecture, OS, Target};
+use std::env;
 
 fn main() {
     Build::new()
@@ -22,6 +23,7 @@ trait BuildExtend {
     fn setup_sources(&mut self) -> &mut Self;
     fn tool_type(&self) -> ToolType;
     fn target_arch(&self) -> Architecture;
+    #[allow(dead_code)]
     fn target_os(&self) -> OS;
 }
 
@@ -32,7 +34,7 @@ impl BuildExtend for Build {
         }
 
         match self.tool_type() {
-            ToolType::ClangLike => self.opt_level_str("fast"),
+            ToolType::ClangLike => self.opt_level(3).flag("-ffast-math"),
             ToolType::GnuLike => self.opt_level(2),
             ToolType::MsvcLike => self.opt_level(2),
             _ => panic!("failed to configure compiler"),
@@ -52,28 +54,14 @@ impl BuildExtend for Build {
         if !cfg!(feature = "openmp") {
             return self;
         }
-        match self.tool_type() {
-            ToolType::ClangLike => {
-                if self.target_os() == OS::Darwin {
-                    self.flag("-Xclang");
-                }
-                self.flag("-fopenmp");
+        self.define("LIBSAIS_OPENMP", None);
+        self.flags(env::var("DEP_OPENMP_FLAG").unwrap().split(" "));
+        if let Some(link) = env::var_os("DEP_OPENMP_CARGO_LINK_INSTRUCTIONS") {
+            for i in env::split_paths(&link) {
+                println!("cargo:{}", i.display());
             }
-            ToolType::GnuLike => {
-                if self.target_os() == OS::Darwin {
-                    self.flag("-Xclang");
-                }
-                self.flag("-fopenmp");
-                if self.target_os() == OS::Win32 {
-                    // openmp-sys reports missing gomp.dll on *-pc-windows-gnu/mingw-w64, workaround for this case
-                    println!("cargo:rustc-link-arg=-l:libgomp.dll.a");
-                }
-            }
-            ToolType::MsvcLike => {
-                self.flag("/openmp");
-            }
-            _ => panic!("failed to configure openmp for unsupported compiler"),
-        };
+        }
+
         self
     }
 

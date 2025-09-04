@@ -24,6 +24,7 @@ parallel = [ "sais-sys/openmp" ]
 sais16 = [ "sais-sys/sais16" ]
 sais32 = [ "sais-sys/sais32" ]
 sais64 = [ "sais-sys/sais64" ]
+bwt_aux = []
 
 [[example]]
 name = "sais32"
